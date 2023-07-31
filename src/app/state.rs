@@ -2,6 +2,7 @@ use std::time::Duration;
 use serde::Serialize;
 use serde::Deserialize;
 use crate::request::get_item_list;
+use crate::request::get_file_chunk;
 use log::error;
 use log::info;
 
@@ -20,11 +21,12 @@ pub enum AppState {
         counter_tick: u64,
         current_url: String,
         current_index:i32,
-        current_items: Vec<Item>,
+        current_items: Option<Vec<Item>>,
         last_index:i32,
         show_file:bool,
         frame_start:usize,
         frame_end:usize,
+        file_chunk:Option<String>,
     },
 }
 
@@ -33,28 +35,53 @@ impl AppState {
         let duration = Duration::from_secs(1);
         let counter_sleep = 0;
         let counter_tick = 0;
-        let current_items = get_item_list(&url).await;
-
-        match current_items{
-            Ok(items) => {
-                let current_index = 0;
-                let last_index = 0;
-                AppState::Initialized {
-                    duration,
-                    counter_sleep,
-                    counter_tick,
-                    current_url: url,
-                    current_index,
-                    last_index,
-                    current_items: items,
-                    show_file:false,
-                    frame_start:0,
-                    frame_end:0, // the frame info should not be placed here
+        if url.ends_with('/'){
+            let current_items = get_item_list(&url).await;
+            match current_items{
+                Ok(items) => {
+                    let current_index = 0;
+                    let last_index = 0;
+                    AppState::Initialized {
+                        duration,
+                        counter_sleep,
+                        counter_tick,
+                        current_url: url,
+                        current_index,
+                        last_index,
+                        current_items: items,
+                        show_file:false,
+                        frame_start:0,
+                        frame_end:0, // the frame info should not be placed here
+                        file_chunk:None,
+                    }
+                },
+                Err(e) => {
+                    error!("☹️ failed to init: can not get the item list from url: {}", e);
+                    AppState::Init
                 }
-            },
-            Err(e) => {
-                error!("☹️ failed to init: can not get the item list from url: {}", e);
-                AppState::Init
+            } 
+        }else{
+            let file_chunk = get_file_chunk(&url).await;
+            match file_chunk{
+                Ok(chunk) => {
+                    AppState::Initialized {
+                        duration,
+                        counter_sleep,
+                        counter_tick,
+                        current_url: url,
+                        current_index:0,
+                        last_index:0,
+                        current_items: Vec::new(),
+                        show_file:true,
+                        frame_start:0,
+                        frame_end:0, // the frame info should not be placed here
+                        file_chunk:Some(chunk),
+                    }
+                },
+                Err(e) => {
+                    error!("☹️ failed to init: can not get the file chunk from url: {}", e);
+                    AppState::Init
+                }
             }
         }
     }
@@ -159,24 +186,43 @@ impl AppState {
         }
     }
 
-    pub fn step_into(&mut self) {
+    pub async fn step_into(&mut self) {
         info!("👉 step into");
         if let Self::Initialized { 
             current_url,
             current_index,
             current_items,
             show_file,
+            file_chunk,
                 ..
         } = self {
-            if current_items.len() == 0 {
-                return self.back_to_previours();
-            } 
-            let item = &current_items[*current_index as usize];
+            let item = &current_items.as_ref().unwrap()[*current_index as usize];
+            current_url.push_str(&item.name);
             if item.size == -1{
-                current_url.push_str(&item.name);
-                *current_index = 0;
-                *show_file = false;
+                current_url.push('/');
+                let new_current_items = get_item_list(&current_url).await;
+                match new_current_items{
+                    Ok(items) => {
+                        *current_items = Some(items);
+                        *current_index = 0;
+                        *show_file = false;
+                    },
+                    Err(e) => {
+                        error!("☹️ failed to step into: can not get the item list from url: {}", e);
+                    }
+                }
             }else{
+                let cur_file_chunk = get_file_chunk(&current_url).await;
+                match cur_file_chunk{
+                    Ok(chunk) => {
+                        *current_items = None;
+                        info!("👉 file chunk: {}", &chunk);
+                        *file_chunk = Some(chunk);
+                    },
+                    Err(e) => {
+                        error!("☹️ failed to step into: can not get the file chunk from url: {}", e);
+                    }
+                }
                 *show_file = true;
             }
             info!("👉 step into: {}", current_url);

@@ -72,6 +72,23 @@ pub async fn get_item_list(url:&str) -> Result<Vec<Item>> {
 } 
 
 
+pub async fn get_file_chunk(url:&str) -> Result<String> {
+    info!("🛜 sending request to {}", url);
+    let (_,path) = extract_path_and_host_from_url(url);
+    let account = USER_CONFIG.account.as_str();
+    let passwd = USER_CONFIG.key.as_str();
+    let header = prepare("GET", &path,account, passwd);
+    let client = reqwest::Client::new();
+    let res = client.get(url)
+        .headers(header)
+        .send()
+        .await?;
+    let status = res.status();
+    info!("status:{:?}", status);
+    let body = res.text().await?;
+    info!("body:{:?}", body);
+    return Ok(body);
+} 
 
 
 
