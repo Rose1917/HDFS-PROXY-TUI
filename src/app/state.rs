@@ -12,6 +12,11 @@ pub struct Item{
     pub size: i64,
 }
 
+pub enum ContentState{
+    ItemList,
+    FileChunk,
+}
+
 #[derive(Clone, Debug)]
 pub enum AppState {
     Init,
@@ -178,11 +183,82 @@ impl AppState {
         }
     }
 
-    pub fn back_to_previours(&mut self) {
+    pub async fn update_state(&mut self, content_type:ContentState){
         if let Self::Initialized { current_url, .. } = self {
-            current_url.find('/').map(|idx| {
-                current_url.truncate(idx);
-            });
+            match content_type{
+                ContentState::ItemList => {
+                    let current_items  = get_item_list(&current_url).await;
+                    let new_state = 
+                        match current_items{
+                            Ok(items) => {
+                                let current_index = 0;
+                                let last_index = 0;
+                                AppState::Initialized {
+                                    current_url: current_url.clone(),
+                                    current_index,
+                                    last_index,
+                                    current_items: Some(items),
+                                    show_file:false,
+                                    frame_start:0,
+                                    frame_end:0, // the frame info should not be placed here
+                                    file_chunk:None,
+                                    duration:Duration::from_secs(1),
+                                    counter_sleep:0,
+                                    counter_tick:self.count_tick().unwrap_or(0),
+                                }
+                            },
+                            Err(e) => {
+                                panic!("☹️ failed to init: can not get the item list from url: {}", e);
+                            }
+                        };
+                    *self = new_state;
+                }   
+                ContentState::FileChunk => {
+                    let file_chunk = get_file_chunk(&current_url).await;
+                    let new_state = 
+                        match file_chunk{
+                            Ok(chunk) => {
+                                AppState::Initialized {
+                                    current_url: current_url.clone(),
+                                    current_index:0,
+                                    last_index:0,
+                                    current_items: None,
+                                    show_file:true,
+                                    frame_start:0,
+                                    frame_end:0, // the frame info should not be placed here
+                                    file_chunk:Some(chunk),
+                                    duration:Duration::from_secs(1),
+                                    counter_sleep:0,
+                                    counter_tick:self.count_tick().unwrap_or(0),
+                                }
+                            },
+                            Err(e) => {
+                                panic!("☹️ failed to init: can not get the file chunk from url: {}", e);
+                            }
+                        };
+                    *self = new_state;
+                }
+            }
+        }
+
+    }
+
+    pub fn back_to_previours(&mut self) {
+        info!("👈 back to previours");
+        let content_state = self.get_state();
+        if let Self::Initialized { current_url, .. } = self {
+            match content_state{
+                ContentState::FileChunk => {
+                    let last_slash_index = current_url.rfind('/').expect("can not find the last slash");
+                    *current_url = current_url[..=last_slash_index].to_string();
+                }
+                ContentState::ItemList => {
+                    let remove_last_slash = current_url.trim_end_matches('/');
+                    let last_slash_index = remove_last_slash.rfind('/').expect("can not find the last slash");
+                    *current_url = current_url[..=last_slash_index].to_string();
+                }
+            }
+            self.update_state(content_state);
         }
     }
 
@@ -244,15 +320,15 @@ impl AppState {
 
     /// return 0 if it is a directory
     /// return 1 if it is a file
-    pub fn get_state(&self) -> i32{
+    pub fn get_state(&self) -> ContentState{
         if let Self::Initialized { 
             current_items:Some(_),
             .. } = self {
-                return 0;
+                return ContentState::ItemList;
         }else if let Self::Initialized { 
             current_items:None,
             .. } = self {
-                return 1;
+                return ContentState::FileChunk;
         }else{
             panic!("☹️ invalid state");
         }
@@ -326,7 +402,6 @@ impl AppState {
             info!("new index: {}", current_index);
         }
     }
-
 }
 
 impl Default for AppState {

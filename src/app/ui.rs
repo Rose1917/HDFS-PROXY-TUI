@@ -14,6 +14,7 @@ use super::actions::Actions;
 use super::state::AppState;
 use crate::app::App;
 use crate::app::state::Item;
+use crate::app::state::ContentState;
 use log::info;
 use lazy_static::lazy_static;
 
@@ -50,13 +51,16 @@ where
 
     let state = app.state();
     if state.is_initialized() {
-        let status = state.get_state();
-        if status == 0{
-            let body = draw_body_dir(app.is_loading(), app.state(), chunks[1].height);
-            rect.render_widget(body, body_chunks[0]);
-        }else{
-            let body = draw_body_file(app.is_loading(), app.state(), chunks[1].height);
-            rect.render_widget(body, body_chunks[0]);
+        match state.get_state(){
+            ContentState::ItemList => {
+                let body = draw_body_dir(app.is_loading(), app.state(), chunks[1].height);
+                rect.render_widget(body, body_chunks[0]);
+            },
+            ContentState::FileChunk => {
+                let body = draw_body_file(app.is_loading(), app.state(), chunks[1].height);
+                rect.render_widget(body, body_chunks[0]);
+            },
+            _ => {}
         }
     }
 
