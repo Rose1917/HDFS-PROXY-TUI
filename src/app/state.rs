@@ -322,13 +322,14 @@ impl AppState {
     /// return 1 if it is a file
     pub fn get_state(&self) -> ContentState{
         if let Self::Initialized { 
-            current_items:Some(_),
+            current_url,
             .. } = self {
-                return ContentState::ItemList;
-        }else if let Self::Initialized { 
-            current_items:None,
-            .. } = self {
-                return ContentState::FileChunk;
+            if current_url.ends_with('/') {
+                ContentState::ItemList
+            }
+            else{
+                ContentState::FileChunk
+            }
         }else{
             panic!("☹️ invalid state");
         }
