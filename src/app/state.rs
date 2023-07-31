@@ -242,6 +242,32 @@ impl AppState {
         }
     }
 
+    /// return 0 if it is a directory
+    /// return 1 if it is a file
+    pub fn get_state(&self) -> i32{
+        if let Self::Initialized { 
+            current_items:Some(_),
+            .. } = self {
+                return 0;
+        }else if let Self::Initialized { 
+            current_items:None,
+            .. } = self {
+                return 1;
+        }else{
+            panic!("☹️ invalid state");
+        }
+    }
+
+    pub fn get_file_chunk(&self) -> String{
+        if let Self::Initialized { 
+            file_chunk:Some(file_chunk),
+            .. } = self {
+                return file_chunk.clone();
+        }else{
+            panic!("☹️ invalid state");
+        }
+    }
+
     pub fn move_up(&mut self){
         info!("👆 move up");
         if let Self::Initialized { 

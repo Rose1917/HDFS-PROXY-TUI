@@ -5,7 +5,7 @@ use tui::backend::Backend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans};
-use tui::widgets::{Block, BorderType, Borders, Cell, LineGauge, Paragraph, Row, Table};
+use tui::widgets::{Block, BorderType, Borders, Cell, LineGauge, Paragraph, Row, Table, Wrap};
 use tui::{symbols, Frame};
 use tui_logger::TuiLoggerWidget;
 use std::cmp::min;
@@ -48,8 +48,17 @@ where
         .constraints([Constraint::Min(20), Constraint::Length(32)].as_ref())
         .split(chunks[1]);
 
-    let body = draw_body(app.is_loading(), app.state(), chunks[1].height);
-    rect.render_widget(body, body_chunks[0]);
+    let state = app.state();
+    let status = state.get_state();
+    if state.is_initialized() {
+        if status == 0{
+            let body = draw_body_dir(app.is_loading(), app.state(), chunks[1].height);
+            rect.render_widget(body, body_chunks[0]);
+        }else{
+            let body = draw_body_file(app.is_loading(), app.state(), chunks[1].height);
+            rect.render_widget(body, body_chunks[0]);
+        }
+    }
 
     let help = draw_help(app.actions());
     rect.render_widget(help, body_chunks[1]);
@@ -86,13 +95,39 @@ fn check_size(rect: &Rect) {
     }
 }
 
-fn draw_body<'a>(loading: bool, state: &mut AppState, height:u16) -> Table<'a> {
-    let initialized_text = if state.is_initialized() {
-        "Initialized"
-    } else {
-        "Not Initialized !"
-    };
-    let loading_text = if loading { "Loading..." } else { "" };
+fn draw_body_file<'a>(loading:bool, state:&mut AppState, height:u16) -> Paragraph<'a>{
+    let text_content = state.get_file_chunk();
+    let highlight_index = state.get_index();
+    let lines = text_content.lines().map(|line| line.to_string()).collect::<Vec<_>>();
+    if state.get_frame() == (0, 0){
+        state.set_frame(0, min(lines.len(), (height - 3) as usize));
+    }
+    let lines = lines.iter().enumerate().map(|(index, line)| {
+        if index as i32 == highlight_index {
+            Spans::from(vec![
+                Span::styled(format!("{} ", line), Style::default().fg(Color::LightGreen)),
+                Span::raw(line.clone()),
+            ])
+        } else {
+            Spans::from(vec![Span::raw(line.clone())])
+        }
+    }).collect::<Vec<_>>();
+
+    Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("File")
+                .border_type(BorderType::Plain),
+        )
+        .wrap(Wrap{trim: true})
+        .scroll((state.get_index().try_into().unwrap(),0))
+        .style(Style::default().fg(Color::White))
+}
+
+
+fn draw_body_dir<'a>(loading: bool, state: &mut AppState, height:u16) -> Table<'a> {
+    let if_initialized = state.is_initialized();
     let tick_text = if let Some(ticks) = state.count_tick() {
         format!("Tick count: {}", ticks)
     } else {
@@ -105,14 +140,14 @@ fn draw_body<'a>(loading: bool, state: &mut AppState, height:u16) -> Table<'a> {
         enumerate().map(|(index, row)| {
             let baes_row = if row.size == -1{
                 Row::new(vec![ 
-                    Cell::from(Span::raw("📁")),
+                    Cell::from(Span::raw("d")),
                     Cell::from(Span::raw(row.name.clone())),
                     Cell::from(Span::raw("-")),
                 ]).height(1)
             }
             else{
                 Row::new(vec![ 
-                    Cell::from(Span::raw("📔")),
+                    Cell::from(Span::raw("f")),
                     Cell::from(Span::raw(row.name.clone())),
                     Cell::from(Span::raw(row.size.to_string())),
                 ]).height(1)
