@@ -106,7 +106,6 @@ fn draw_body_file<'a>(loading:bool, state:&mut AppState, height:u16) -> Paragrap
         if index as i32 == highlight_index {
             Spans::from(vec![
                 Span::styled(format!("{} ", line), Style::default().fg(Color::LightGreen)),
-                Span::raw(line.clone()),
             ])
         } else {
             Spans::from(vec![Span::raw(line.clone())])
