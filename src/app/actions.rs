@@ -11,16 +11,24 @@ pub enum Action {
     Sleep,
     IncrementDelay,
     DecrementDelay,
+    BackToPreviours,
+    StepInto,
+    MoveUp,
+    MoveDown,
 }
 
 impl Action {
     /// All available actions
     pub fn iterator() -> Iter<'static, Action> {
-        static ACTIONS: [Action; 4] = [
+        static ACTIONS: [Action; 8] = [
             Action::Quit,
             Action::Sleep,
             Action::IncrementDelay,
             Action::DecrementDelay,
+            Action::BackToPreviours,
+            Action::StepInto,
+            Action::MoveUp,
+            Action::MoveDown,
         ];
         ACTIONS.iter()
     }
@@ -32,6 +40,10 @@ impl Action {
             Action::Sleep => &[Key::Char('s')],
             Action::IncrementDelay => &[Key::Char('+')],
             Action::DecrementDelay => &[Key::Char('-')],
+            Action::BackToPreviours => &[Key::Char('h'),Key::Esc],
+            Action::StepInto => &[Key::Enter, Key::Char('l')],
+            Action::MoveUp => &[Key::Up, Key::Char('k')],
+            Action::MoveDown => &[Key::Down, Key::Char('j')],
         }
     }
 }
@@ -44,6 +56,10 @@ impl Display for Action {
             Action::Sleep => "Sleep",
             Action::IncrementDelay => "Increment delay",
             Action::DecrementDelay => "Decrement delay",
+            Action::BackToPreviours => "Back to previous",
+            Action::StepInto => "Step into",
+            Action::MoveUp => "Move up",
+            Action::MoveDown => "Move down",
         };
         write!(f, "{}", str)
     }

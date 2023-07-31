@@ -64,6 +64,26 @@ impl App {
                     self.state.decrement_delay();
                     AppReturn::Continue
                 }
+
+                Action::BackToPreviours => {
+                    self.state.back_to_previours();
+                    AppReturn::Continue
+                }
+
+                Action::StepInto =>{
+                    self.state.step_into();
+                    AppReturn::Continue
+                }
+
+                Action::MoveUp => {
+                    self.state.move_up();
+                    AppReturn::Continue
+                }
+
+                Action::MoveDown => {
+                    self.state.move_down();
+                    AppReturn::Continue
+                }
             }
         } else {
             warn!("No action accociated to {}", key);
@@ -91,24 +111,25 @@ impl App {
     pub fn actions(&self) -> &Actions {
         &self.actions
     }
-    pub fn state(&self) -> &AppState {
-        &self.state
+    pub fn state(&mut self) -> &mut AppState {
+        &mut self.state
     }
 
     pub fn is_loading(&self) -> bool {
         self.is_loading
     }
 
-    pub fn initialized(&mut self) {
+    pub async fn initialized(&mut self, init_url:String) {
         // Update contextual actions
         self.actions = vec![
             Action::Quit,
-            Action::Sleep,
-            Action::IncrementDelay,
-            Action::DecrementDelay,
+            Action::BackToPreviours,
+            Action::StepInto,
+            Action::MoveUp,
+            Action::MoveDown,
         ]
         .into();
-        self.state = AppState::initialized()
+        self.state = AppState::initialized(init_url).await;
     }
 
     pub fn loaded(&mut self) {

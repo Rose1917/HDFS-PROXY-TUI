@@ -8,12 +8,16 @@ use tui::text::{Span, Spans};
 use tui::widgets::{Block, BorderType, Borders, Cell, LineGauge, Paragraph, Row, Table};
 use tui::{symbols, Frame};
 use tui_logger::TuiLoggerWidget;
+use std::cmp::min;
 
 use super::actions::Actions;
 use super::state::AppState;
 use crate::app::App;
+use crate::app::state::Item;
+use log::info;
+use lazy_static::lazy_static;
 
-pub fn draw<B>(rect: &mut Frame<B>, app: &App)
+pub fn draw<B>(rect: &mut Frame<B>, app: &mut App)
 where
     B: Backend,
 {
@@ -44,7 +48,7 @@ where
         .constraints([Constraint::Min(20), Constraint::Length(32)].as_ref())
         .split(chunks[1]);
 
-    let body = draw_body(app.is_loading(), app.state());
+    let body = draw_body(app.is_loading(), app.state(), chunks[1].height);
     rect.render_widget(body, body_chunks[0]);
 
     let help = draw_help(app.actions());
@@ -62,7 +66,7 @@ where
 }
 
 fn draw_title<'a>() -> Paragraph<'a> {
-    Paragraph::new("Plop with TUI")
+    Paragraph::new("hdfs proxy tui")
         .style(Style::default().fg(Color::LightCyan))
         .alignment(Alignment::Center)
         .block(
@@ -82,38 +86,74 @@ fn check_size(rect: &Rect) {
     }
 }
 
-fn draw_body<'a>(loading: bool, state: &AppState) -> Paragraph<'a> {
+fn draw_body<'a>(loading: bool, state: &mut AppState, height:u16) -> Table<'a> {
     let initialized_text = if state.is_initialized() {
         "Initialized"
     } else {
         "Not Initialized !"
     };
     let loading_text = if loading { "Loading..." } else { "" };
-    let sleep_text = if let Some(sleeps) = state.count_sleep() {
-        format!("Sleep count: {}", sleeps)
-    } else {
-        String::default()
-    };
     let tick_text = if let Some(ticks) = state.count_tick() {
         format!("Tick count: {}", ticks)
     } else {
         String::default()
     };
-    Paragraph::new(vec![
-        Spans::from(Span::raw(initialized_text)),
-        Spans::from(Span::raw(loading_text)),
-        Spans::from(Span::raw(sleep_text)),
-        Spans::from(Span::raw(tick_text)),
-    ])
-    .style(Style::default().fg(Color::LightCyan))
-    .alignment(Alignment::Left)
-    .block(
-        Block::default()
-            // .title("Body")
-            .borders(Borders::ALL)
-            .style(Style::default().fg(Color::White))
-            .border_type(BorderType::Plain),
-    )
+
+    let rows = state.rows();
+    let highlight_index = state.get_index();
+    let table_rows = rows.iter().
+        enumerate().map(|(index, row)| {
+            let baes_row = if row.size == -1{
+                Row::new(vec![ 
+                    Cell::from(Span::raw("📁")),
+                    Cell::from(Span::raw(row.name.clone())),
+                    Cell::from(Span::raw("-")),
+                ]).height(1)
+            }
+            else{
+                Row::new(vec![ 
+                    Cell::from(Span::raw("📔")),
+                    Cell::from(Span::raw(row.name.clone())),
+                    Cell::from(Span::raw(row.size.to_string())),
+                ]).height(1)
+
+            };
+            if index as i32 == highlight_index {
+                baes_row.style(Style::default().fg(Color::LightGreen))
+            } else {
+                baes_row
+            }
+        }).collect::<Vec<_>>();
+    if state.is_initialized() && state.get_frame() == (0, 0){
+        info!("table_rows:{}",table_rows.len());
+        state.set_frame(0, min(table_rows.len(), (height - 3) as usize));
+        info!("frame size:{:?}", state.get_frame());
+    }
+
+    let (frame_start, frame_end) = state.get_frame();
+    let table_rows = table_rows[frame_start..frame_end].to_owned();
+
+    // head and contents height
+    let table = Table::new(table_rows.to_owned())
+        .header(
+            Row::new(vec!["Type", "Name", "Size"])
+                .style(Style::default().fg(Color::Yellow))
+                .height(1)
+                .bottom_margin(1),
+        )
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Files")
+                .border_type(BorderType::Plain),
+        )
+        .widths(&[
+            Constraint::Length(5),
+            Constraint::Length(20),
+            Constraint::Length(10),
+        ]);
+    table
+
 }
 
 fn draw_duration(duration: &Duration) -> LineGauge {
@@ -124,7 +164,7 @@ fn draw_duration(duration: &Duration) -> LineGauge {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Sleep duration"),
+                .title("Request Duration")
         )
         .gauge_style(
             Style::default()

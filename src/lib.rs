@@ -15,8 +15,9 @@ use crate::app::ui;
 pub mod app;
 pub mod inputs;
 pub mod io;
+pub mod request;
 
-pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
+pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>, base_url:String) -> Result<()> {
     // Configure Crossterm backend for tui
     let stdout = stdout();
     crossterm::terminal::enable_raw_mode()?;
@@ -33,14 +34,14 @@ pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>) -> Result<()> {
     {
         let mut app = app.lock().await;
         // Here we assume the the first load is a long task
-        app.dispatch(IoEvent::Initialize).await;
+        app.dispatch(IoEvent::Initialize(base_url)).await;
     }
 
     loop {
         let mut app = app.lock().await;
 
         // Render
-        terminal.draw(|rect| ui::draw(rect, &app))?;
+        terminal.draw(|rect| ui::draw(rect, &mut app))?;
 
         // Handle inputs
         let result = match events.next().await {
