@@ -243,7 +243,7 @@ impl AppState {
 
     }
 
-    pub fn back_to_previours(&mut self) {
+    pub async fn back_to_previours(&mut self) {
         info!("👈 back to previours");
         let content_state = self.get_state();
         if let Self::Initialized { current_url, .. } = self {
@@ -258,7 +258,7 @@ impl AppState {
                     *current_url = current_url[..=last_slash_index].to_string();
                 }
             }
-            self.update_state(content_state);
+            self.update_state(content_state).await;
         }
     }
 

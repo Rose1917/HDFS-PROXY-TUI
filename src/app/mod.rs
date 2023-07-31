@@ -66,7 +66,7 @@ impl App {
                 }
 
                 Action::BackToPreviours => {
-                    self.state.back_to_previours();
+                    self.state.back_to_previours().await;
                     AppReturn::Continue
                 }
 
