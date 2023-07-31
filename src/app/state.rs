@@ -258,7 +258,7 @@ impl AppState {
                     *current_url = current_url[..=last_slash_index].to_string();
                 }
             }
-            self.update_state(content_state).await;
+            self.update_state(self.get_state()).await;
         }
     }
 
