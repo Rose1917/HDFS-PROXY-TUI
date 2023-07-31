@@ -226,6 +226,19 @@ impl AppState {
                 *show_file = true;
             }
             info!("👉 step into: {}", current_url);
+            self.reset_frame();
+        }
+    }
+
+    pub fn reset_frame(&mut self){
+        if let Self::Initialized { 
+            current_index,
+            frame_start,
+            frame_end,
+            .. } = self {
+            *current_index = 0;
+            *frame_start = 0;
+            *frame_end = 0;
         }
     }
 
