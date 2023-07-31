@@ -71,7 +71,7 @@ impl App {
                 }
 
                 Action::StepInto =>{
-                    self.state.step_into();
+                    self.state.step_into().await;
                     AppReturn::Continue
                 }
 
