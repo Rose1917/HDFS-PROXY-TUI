@@ -49,8 +49,8 @@ where
         .split(chunks[1]);
 
     let state = app.state();
-    let status = state.get_state();
     if state.is_initialized() {
+        let status = state.get_state();
         if status == 0{
             let body = draw_body_dir(app.is_loading(), app.state(), chunks[1].height);
             rect.render_widget(body, body_chunks[0]);
