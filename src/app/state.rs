@@ -48,7 +48,7 @@ impl AppState {
                         current_url: url,
                         current_index,
                         last_index,
-                        current_items: items,
+                        current_items: Some(items),
                         show_file:false,
                         frame_start:0,
                         frame_end:0, // the frame info should not be placed here
@@ -71,7 +71,7 @@ impl AppState {
                         current_url: url,
                         current_index:0,
                         last_index:0,
-                        current_items: Vec::new(),
+                        current_items: None,
                         show_file:true,
                         frame_start:0,
                         frame_end:0, // the frame info should not be placed here
@@ -125,7 +125,7 @@ impl AppState {
     }
 
     pub fn rows(&self) -> Vec<Item>{
-        if let Self::Initialized { current_items, .. } = self {
+        if let Self::Initialized { current_items:Some(current_items), .. } = self {
             current_items.clone()
         }else{
             Vec::new()
@@ -234,13 +234,13 @@ impl AppState {
         if let Self::Initialized { 
             current_index,
             last_index , 
-            current_items,
+            current_items:Some(current_items),
             frame_start,
             frame_end,
             .. } = self {
             *last_index = *current_index;
             *current_index = (*current_index - 1).clamp(0, current_items.len() as i32 - 1);
-            if *current_index < *frame_start as i32{
+            if *current_index + 1 == *frame_end as i32 && current_items.len() > (*frame_end - *frame_start){
                 *frame_start -= 1;
                 *frame_end -= 1;
             }
@@ -253,13 +253,13 @@ impl AppState {
         if let Self::Initialized { 
             current_index,
             last_index , 
-            current_items,
+            current_items:Some(current_items),
             frame_start,
             frame_end,
             .. } = self {
             *last_index = *current_index;
             *current_index = (*current_index + 1).clamp(0, current_items.len() as i32 - 1);
-            if *current_index + 1 == *frame_end as i32{
+            if *current_index + 1 == *frame_end as i32 && current_items.len() > (*frame_end - *frame_start){
                 *frame_start += 1;
                 *frame_end += 1;
             }
