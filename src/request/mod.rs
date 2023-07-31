@@ -1,8 +1,10 @@
 use crate::app::state::Item;
 use reqwest::Result;
 use std::time::SystemTime;
+use crypto::sha1::Sha1;
 use log::{error, info};
-use hmac_sha1_compact::HMAC;
+use crypto::hmac::Hmac;
+use crate::crypto::mac::Mac;
 use std::collections::HashMap;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
 use lazy_static::lazy_static;
@@ -25,7 +27,7 @@ fn extract_path_and_host_from_url(url:&str) -> (String, String) {
     let mut iter = url.split("/");
     let host = iter.next().unwrap_or("");
     let path = iter.collect::<Vec<&str>>().join("/");
-    return (host.to_string(), path);
+    return (host.to_string(), "/".to_owned() + &path);
 }
 
 fn prepare(method:&str, path:&str, account:&str, passwd:&str) ->HeaderMap{
@@ -36,10 +38,17 @@ fn prepare(method:&str, path:&str, account:&str, passwd:&str) ->HeaderMap{
         .as_secs();
     let token = format!("{},{},{},{}", 
                     time_stamp, account, method, path);
-    let hmac = HMAC::mac(token.as_bytes(), passwd.as_bytes());
+    info!("token:{}", token);
+    info!("passwd:{}", passwd);
+    let mut mac = Hmac::new(Sha1::new(), passwd.as_bytes());
+    mac.input(token.as_bytes());
+    let result = mac.result();
+    let hmac = result.code();
+    info!("hmac:{:?}", hmac);
     let sign = hex::encode(hmac);
     res.insert(HeaderName::from_static("auth-token"),
        HeaderValue::from_str( &format!("{},{},{}",time_stamp, account, sign)).unwrap());
+    info!("header value:{},{},{}", time_stamp, account, sign);
     return res;
 }
 
@@ -54,6 +63,8 @@ pub async fn get_item_list(url:&str) -> Result<Vec<Item>> {
         .headers(header)
         .send()
         .await?;
+    let status = res.status();
+    info!("status:{:?}", status);
     let body = res.text().await?;
     info!("body:{:?}", body);
     let items: Vec<Item> = serde_json::from_str(&body).unwrap();

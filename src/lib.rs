@@ -16,6 +16,7 @@ pub mod app;
 pub mod inputs;
 pub mod io;
 pub mod request;
+extern crate crypto;
 
 pub async fn start_ui(app: &Arc<tokio::sync::Mutex<App>>, base_url:String) -> Result<()> {
     // Configure Crossterm backend for tui
