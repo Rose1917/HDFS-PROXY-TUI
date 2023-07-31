@@ -284,6 +284,16 @@ impl AppState {
                 *frame_end -= 1;
             }
             info!("new index: {}", current_index);
+        }else if let Self::Initialized { 
+            current_index,
+            last_index , 
+            current_items:None,
+            file_chunk:Some(file_chunk),
+            .. } = self {
+            *last_index = *current_index;
+            let lines_count = file_chunk.lines().count();
+            *current_index = (*current_index - 1).clamp(0, lines_count as i32 - 1);
+            info!("new index: {}", current_index);
         }
     }
 
@@ -293,6 +303,7 @@ impl AppState {
             current_index,
             last_index , 
             current_items:Some(current_items),
+            file_chunk:None,
             frame_start,
             frame_end,
             .. } = self {
@@ -302,6 +313,16 @@ impl AppState {
                 *frame_start += 1;
                 *frame_end += 1;
             }
+            info!("new index: {}", current_index);
+        }else if let Self::Initialized { 
+            current_index,
+            last_index , 
+            current_items:None,
+            file_chunk:Some(file_chunk),
+            .. } = self {
+            *last_index = *current_index;
+            let lines_count = file_chunk.lines().count();
+            *current_index = (*current_index + 1).clamp(0, lines_count as i32 - 1);
             info!("new index: {}", current_index);
         }
     }
