@@ -68,8 +68,8 @@ where
     rect.render_widget(help, body_chunks[1]);
 
     // Duration LineGauge
-    if let Some(duration) = app.state().duration() {
-        let duration_block = draw_duration(duration);
+    if let AppState::Initialized {current_url,..} = app.state() {
+        let duration_block = draw_current_url(current_url);
         rect.render_widget(duration_block, chunks[2]);
     }
 
@@ -194,25 +194,15 @@ fn draw_body_dir<'a>(loading: bool, state: &mut AppState, height:u16) -> Table<'
 
 }
 
-fn draw_duration(duration: &Duration) -> LineGauge {
-    let sec = duration.as_secs();
-    let label = format!("{}s", sec);
-    let ratio = sec as f64 / 10.0;
-    LineGauge::default()
+fn draw_current_url(current_url:&str) -> Paragraph {
+    Paragraph::new(current_url)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Request Duration")
+                .title("Current URL")
+                .border_type(BorderType::Plain),
         )
-        .gauge_style(
-            Style::default()
-                .fg(Color::Cyan)
-                .bg(Color::Black)
-                .add_modifier(Modifier::BOLD),
-        )
-        .line_set(line::THICK)
-        .label(label)
-        .ratio(ratio)
+        .style(Style::default().fg(Color::White))
 }
 
 fn draw_help(actions: &Actions) -> Table {
