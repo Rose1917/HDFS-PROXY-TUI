@@ -84,7 +84,6 @@ pub async fn get_file_chunk(url: &str) -> Result<String> {
     let status = res.status();
     info!("status:{:?}", status);
     let body = res.text().await?;
-    info!("body:{:?}", body);
     return Ok(body);
 }
 
@@ -95,14 +94,17 @@ pub async fn dump_file(url: &str, file_chunk: &Option<String>) -> Result<()> {
         return Ok(());
     }
 
+    info!("target url:{}", url);
     let file_name = extract_filename_from_url(url);
     if let Some(file_chunk_str) = file_chunk {
-        std::fs::write(file_name, file_chunk_str);
+        std::fs::write(&file_name, file_chunk_str)
+            .expect(&format!("failed to write to {} from {}", &file_name, url));
         return Ok(());
     }
 
     let chunk = get_file_chunk(url).await?;
-    std::fs::write(file_name, chunk);
+    std::fs::write(&file_name, chunk)
+        .expect(&format!("failed to write to {} from {}", &file_name, url));
     return Ok(());
 }
 
