@@ -70,7 +70,7 @@ impl App {
                     AppReturn::Continue
                 }
 
-                Action::StepInto =>{
+                Action::StepInto => {
                     self.state.step_into().await;
                     AppReturn::Continue
                 }
@@ -85,7 +85,7 @@ impl App {
                     AppReturn::Continue
                 }
                 Action::Save => {
-                    self.state.save_file();
+                    self.state.save_file().await;
                     AppReturn::Continue
                 }
             }
@@ -123,7 +123,7 @@ impl App {
         self.is_loading
     }
 
-    pub async fn initialized(&mut self, init_url:String) {
+    pub async fn initialized(&mut self, init_url: String) {
         // Update contextual actions
         self.actions = vec![
             Action::Quit,
