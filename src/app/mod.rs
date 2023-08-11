@@ -124,6 +124,7 @@ impl App {
             Action::StepInto,
             Action::MoveUp,
             Action::MoveDown,
+            Action::Save,
         ]
         .into();
         self.state = AppState::initialized(init_url).await;
