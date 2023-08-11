@@ -84,6 +84,10 @@ impl App {
                     self.state.move_down();
                     AppReturn::Continue
                 }
+                Action::Save => {
+                    self.state.save_file();
+                    AppReturn::Continue
+                }
             }
         } else {
             warn!("No action accociated to {}", key);

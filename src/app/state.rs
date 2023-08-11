@@ -403,6 +403,10 @@ impl AppState {
             info!("new index: {}", current_index);
         }
     }
+
+    pub fn save_file(&mut self){
+
+    }
 }
 
 impl Default for AppState {
