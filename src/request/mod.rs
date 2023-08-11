@@ -41,19 +41,15 @@ fn prepare(method: &str, path: &str, account: &str, passwd: &str) -> HeaderMap {
         .expect("failed to get time stamp")
         .as_secs();
     let token = format!("{},{},{},{}", time_stamp, account, method, path);
-    info!("token:{}", token);
-    info!("passwd:{}", passwd);
     let mut mac = Hmac::new(Sha1::new(), passwd.as_bytes());
     mac.input(token.as_bytes());
     let result = mac.result();
     let hmac = result.code();
-    info!("hmac:{:?}", hmac);
     let sign = hex::encode(hmac);
     res.insert(
         HeaderName::from_static("auth-token"),
         HeaderValue::from_str(&format!("{},{},{}", time_stamp, account, sign)).unwrap(),
     );
-    info!("header value:{},{},{}", time_stamp, account, sign);
     return res;
 }
 
@@ -68,7 +64,6 @@ pub async fn get_item_list(url: &str) -> Result<Vec<Item>> {
     let status = res.status();
     info!("status:{:?}", status);
     let body = res.text().await?;
-    info!("body:{:?}", body);
     let items: Vec<Item> = serde_json::from_str(&body).unwrap();
     return Ok(items);
 }
@@ -96,6 +91,7 @@ pub async fn dump_file(url: &str, file_chunk: &Option<String>) -> Result<()> {
 
     info!("target url:{}", url);
     let file_name = extract_filename_from_url(url);
+
     if let Some(file_chunk_str) = file_chunk {
         std::fs::write(&file_name, file_chunk_str)
             .expect(&format!("failed to write to {} from {}", &file_name, url));
