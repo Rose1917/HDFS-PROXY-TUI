@@ -3,6 +3,7 @@ use crate::request::get_file_chunk;
 use crate::request::get_item_list;
 use log::error;
 use log::info;
+use log::warn;
 use serde::Deserialize;
 use serde::Serialize;
 use std::time::Duration;
@@ -463,9 +464,12 @@ impl AppState {
         {
             let mut current_url = current_url.to_owned();
             current_url.push_str(&items[*current_index as usize].name);
+            info!("target file url : {}", current_url);
             if let Err(e) = dump_file(&current_url, file_chunk).await {
                 error!("failed to dump {} to local file", e);
             }
+        } else {
+            warn!("trying to save directory but can not satifsy");
         }
     }
 }
