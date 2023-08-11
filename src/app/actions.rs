@@ -8,7 +8,6 @@ use crate::inputs::key::Key;
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action {
     Quit,
-    Sleep,
     IncrementDelay,
     DecrementDelay,
     BackToPreviours,
@@ -21,9 +20,8 @@ pub enum Action {
 impl Action {
     /// All available actions
     pub fn iterator() -> Iter<'static, Action> {
-        static ACTIONS: [Action; 9] = [
+        static ACTIONS: [Action; 8] = [
             Action::Quit,
-            Action::Sleep,
             Action::IncrementDelay,
             Action::DecrementDelay,
             Action::BackToPreviours,
@@ -39,10 +37,9 @@ impl Action {
     pub fn keys(&self) -> &[Key] {
         match self {
             Action::Quit => &[Key::Ctrl('c'), Key::Char('q')],
-            Action::Sleep => &[Key::Char('s')],
             Action::IncrementDelay => &[Key::Char('+')],
             Action::DecrementDelay => &[Key::Char('-')],
-            Action::BackToPreviours => &[Key::Char('h'),Key::Esc],
+            Action::BackToPreviours => &[Key::Char('h'), Key::Esc],
             Action::StepInto => &[Key::Enter, Key::Char('l')],
             Action::MoveUp => &[Key::Up, Key::Char('k')],
             Action::MoveDown => &[Key::Down, Key::Char('j')],
@@ -56,7 +53,6 @@ impl Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
             Action::Quit => "Quit",
-            Action::Sleep => "Sleep",
             Action::IncrementDelay => "Increment delay",
             Action::DecrementDelay => "Decrement delay",
             Action::BackToPreviours => "Back to previous",
@@ -134,27 +130,22 @@ mod tests {
 
     #[test]
     fn should_find_action_by_key() {
-        let actions: Actions = vec![Action::Quit, Action::Sleep].into();
-        let result = actions.find(Key::Ctrl('c'));
-        assert_eq!(result, Some(&Action::Quit));
+        let actions: Actions = vec![Action::Quit, Action::Save].into();
+        let result = actions.find(Key::Char('s'));
+        assert_eq!(result, Some(&Action::Save));
     }
 
     #[test]
     fn should_find_action_by_key_not_found() {
-        let actions: Actions = vec![Action::Quit, Action::Sleep].into();
+        let actions: Actions = vec![Action::Quit].into();
         let result = actions.find(Key::Alt('w'));
         assert_eq!(result, None);
     }
 
     #[test]
     fn should_create_actions_from_vec() {
-        let _actions: Actions = vec![
-            Action::Quit,
-            Action::Sleep,
-            Action::IncrementDelay,
-            Action::DecrementDelay,
-        ]
-        .into();
+        let _actions: Actions =
+            vec![Action::Quit, Action::IncrementDelay, Action::DecrementDelay].into();
     }
 
     #[test]
@@ -163,7 +154,6 @@ mod tests {
         let _actions: Actions = vec![
             Action::Quit,
             Action::DecrementDelay,
-            Action::Sleep,
             Action::IncrementDelay,
             Action::IncrementDelay,
             Action::Quit,

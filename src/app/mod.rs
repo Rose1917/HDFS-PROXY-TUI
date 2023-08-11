@@ -47,13 +47,6 @@ impl App {
             debug!("Run action [{:?}]", action);
             match action {
                 Action::Quit => AppReturn::Exit,
-                Action::Sleep => {
-                    if let Some(duration) = self.state.duration().cloned() {
-                        // Sleep is an I/O action, we dispatch on the IO channel that's run on another thread
-                        self.dispatch(IoEvent::Sleep(duration)).await
-                    }
-                    AppReturn::Continue
-                }
                 // IncrementDelay and DecrementDelay is handled in the UI thread
                 Action::IncrementDelay => {
                     self.state.increment_delay();
